@@ -1,0 +1,13 @@
+name: GVD429
+title: GVD429
+username:
+account: ignaciof
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 899429
+bundleId: 2048620
+url: https://ignaciof.shinyapps.io/GVD429/
+when: 1556596398.18465
+asMultiple: TRUE
+asStatic: FALSE
+ignoredFiles: GunViolenceDashboardShiny.Rmd
