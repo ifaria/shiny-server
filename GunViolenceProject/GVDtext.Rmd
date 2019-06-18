@@ -1,0 +1,42 @@
+---
+title: "gvdtext"
+author: "Ignacio Faria"
+date: "June 2, 2019"
+output: html_document
+---
+
+### Data
+
+Map data is gathered from several different sources.
+
+ * Red and Blue colors are scraped from <a href="https://en.wikipedia.org/wiki/List_of_United_States_governors" target="blank">Wikipedia List of United States Governors</a>
+ * Longitudes and latitudes that are not listed are gathered from the the ggmap package (cited below)
+ 
+ * Population densities are gathered from the <a href="https://www.census.gov/data/tables/time-series/demo/popest/2010s-national-total.html" target="blank">US Census Bureau</a>
+ * Map polygons are gathered from the r "maps" package
+ 
+The data presented is collected from the <a href="https://www.gunviolencearchive.org" target="blank">Gun Violence Archive</a> - a non-profit, non-partisan corporation in the United States. The GVA checks all cases for accuracy before they are posted. The purpose is to understand crime at the street, Congressional District, and State legislator level.
+
+D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R
+  Journal, 5(1), 144-161. URL
+  http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf
+
+### Definitions
+
+Cases are verified by initial researchers and a secondary validation process. Data is gathered through automated queries, manual research through over 2,000 media sources, aggregates, police blotters, and plice media outlets daily.
+
+The goal is to provide information on most types of gun violence, with the exception of suicides and armed robberies. These who are collected in aggregate with law enforcemet in quarterly reports.
+
+Basic Definitions:
+
+Term            | Definition
+----------------|---------------------------------------------------------
+Gun Violence    |Gun Violence describes the results of all incidents of death or injury or threat with firearms without pejorative judgment within the definition. Violence is defined without intent or consequence as a consideration. To that end a shooting of a victim by a subject/suspect is considered gun violence as is a defensive use or an officer involved shooting. The act itself, no matter the reason is violent in nature.
+Summary Ledger  | An ongoing counter of incident reports in selected categories beginning January 1, 2015. Sourcing is found linked to each incident in the database. No number exists without a verifiable source.
+Murder/Suicide  | An incident where one person kills one or more individuals and then himself at the same/near location.
+School Shooting | An incident with death or injury that occurs on school property when students, faculty and/or staff are on the premises. Intent during those times are not restricted to specific type of shootings. Incidents that take place on or near school property when no students or faculty/staff are present are not considered "school shootings".
+Mass Shooting   | FOUR or more killed in a single event [incident], at the same general time and location not including the shooter.
+Mass Murder     | FOUR or more shot and/or killed in a single event [incident], at the same general time and location  not including the shooter.
+Spree/Serial  Murder  | The unlawful killing of two or more victims by the same offender(s), in separate events.
+Defensive Use | 	The reported use of force with a firearm to protect and/or defend one's self or family. Only verified incidents are reported.
+Home Invasion | The forcible entry with firearms with the intent to terrorize, steal or harm the occupants of the home. Only verified incidents are reported.
