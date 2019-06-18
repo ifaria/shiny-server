@@ -257,8 +257,8 @@ body <- dashboardBody(
           tabBox(height = 740, width = NULL, id = "tabs",
               selected = "Data & Definitions",
               tabPanel(title = "Data & Definitions", 
-                       div(style = 'overflow-y:scroll;height:700px;',
-                       includeMarkdown("GVDtext.Rmd")
+                       div(style = 'overflow-y:scroll;height:700px;'
+                       #includeMarkdown("GVDtext.Rmd")
                           )),
               tabPanel(title = "Incidents",
                        tags$style("#click_an_incident {font-size:30px;
