@@ -16,10 +16,9 @@ library(ggiraph)
 
 #Data <- readRDS("Data.rds")
 Data <- readRDS("newdata2.rds")
-#Data_Incident_Characteristics <- readRDS("Data_Incident_Characteristics.rds")
-#Data_Incident_Characteristics <- saveRDS("Data_Incident_Characteristics.rds")
+Data_Incident_Characteristics <- readRDS("Data_Incident_Characteristics.rds")
 #Data_Guns <- readRDS("Data_Guns.rds")
-#Data_Participants <- readRDS("Data_Participants.rds")
+Data_Participants <- readRDS("Data_Participants.rds")
 #state_pop <- readRDS("state_pop")
 #state_pop$NAME <-  str_to_lower(state_pop$NAME)
 #colnames(state_pop) <- c("States", "Pop_Estimates_2018")
@@ -46,6 +45,8 @@ state_sss <- Data %>%
   full_join(cookmap, by = c("States" = "name")) %>%
   select(-geometry) 
 ###
+### State Laws
+state_laws <- readRDS("gun_laws_by_state.rds")
 look <- enframe(state_laws, name = "state", value = "laws") %>%
   unnest() %>%
   mutate(Subjectlaw = str_to_sentence(Subjectlaw))
@@ -96,8 +97,7 @@ look2 <- look %>%
 
 
 
-### State Laws
-state_laws <- readRDS("gun_laws_by_state.rds")
+
 
 ###
 
@@ -258,7 +258,7 @@ body <- dashboardBody(
               selected = "Data & Definitions",
               tabPanel(title = "Data & Definitions", 
                        div(style = 'overflow-y:scroll;height:700px;',
-                       includeMarkdown("GVDtext.rmd")
+                       includeMarkdown("GVDtext.Rmd")
                           )),
               tabPanel(title = "Incidents",
                        tags$style("#click_an_incident {font-size:30px;
