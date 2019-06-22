@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1559895259524.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "79916787",
+    "lastKnownWriteTime" : 1559902870,
+    "last_content_update" : 1559902870404,
+    "path" : "~/GitHub/shiny-server/GunViolenceProject/cooks_colors_map.R",
+    "project_path" : "cooks_colors_map.R",
+    "properties" : {
+        "cursorPosition" : "54,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

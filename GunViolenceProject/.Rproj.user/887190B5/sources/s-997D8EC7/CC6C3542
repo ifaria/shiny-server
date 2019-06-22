@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1560887453004.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2050250693",
+    "id" : "CC6C3542",
+    "lastKnownWriteTime" : 1531777310,
+    "last_content_update" : 1531777310,
+    "path" : "~/GitHub/shiny-server/GunViolenceProject/birt/ui.R",
+    "project_path" : "birt/ui.R",
+    "properties" : {
+    },
+    "relative_order" : 10,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

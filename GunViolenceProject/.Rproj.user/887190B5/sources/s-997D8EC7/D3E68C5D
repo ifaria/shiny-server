@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1560888419253.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "D3E68C5D",
+    "lastKnownWriteTime" : 1560888797,
+    "last_content_update" : 1560888797013,
+    "path" : "~/GitHub/shiny-server/GunViolenceProject/GVShinyDashboard.R",
+    "project_path" : "GVShinyDashboard.R",
+    "properties" : {
+        "cursorPosition" : "110,49",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 12,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

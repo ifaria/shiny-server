@@ -10,6 +10,7 @@ library(tidyr)
 library(lubridate)
 library(ggplot2)
 library(ggiraph)
+library(sf)
 #library(plotly)
 
 ########## Static Data
@@ -590,4 +591,4 @@ output$hover_states  <- renderText({
 })
 
 }
-shinyApp(ui, server)
+runApp(shinyApp(ui, server))

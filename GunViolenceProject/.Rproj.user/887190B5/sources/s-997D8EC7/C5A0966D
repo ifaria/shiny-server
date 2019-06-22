@@ -1,0 +1,24 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1559893190865.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "C5A0966D",
+    "lastKnownWriteTime" : 1560879898,
+    "last_content_update" : 1560879898468,
+    "path" : "~/GitHub/shiny-server/GunViolenceProject/061119 doodle.R",
+    "project_path" : "061119 doodle.R",
+    "properties" : {
+        "cursorPosition" : "228,2",
+        "scrollLine" : "0",
+        "source_window_id" : "",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

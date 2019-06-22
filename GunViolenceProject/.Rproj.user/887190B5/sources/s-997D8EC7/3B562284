@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1559903101017.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "70908161",
+    "id" : "3B562284",
+    "lastKnownWriteTime" : 1561235052,
+    "last_content_update" : 1561235052824,
+    "path" : "~/GitHub/shiny-server/GunViolenceProject/GVShinyDashboardLaws.R",
+    "project_path" : "GVShinyDashboardLaws.R",
+    "properties" : {
+        "cursorPosition" : "593,28",
+        "scrollLine" : "563",
+        "source_window_id" : ""
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,13 @@
+name: GunViolenceProject
+title: GunViolenceProject
+username:
+account: ignaciof
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 986986
+bundleId: 2171258
+url: https://ignaciof.shinyapps.io/GunViolenceProject/
+when: 1561226276.38387
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|061119 doodle.R|cooks_colors_map.R|cooksdata.rds|Data.rds|Data_Guns.rds|GunViolenceArchiveSheet2.tsv|GunViolenceDashboardShiny.Rmd|GVD.Rmd|GVD2.Rmd|GVD3.Rmd|GVDtext.html|GVDtext.Rmd|GVDWAT.R|GVShinyDashboard.R|newdata1.rds|Rplot001.png|sample-apps|state_pop|testdata|wgt_tib.rds|birt/server.R|birt/ui.R|fdgs/app.R

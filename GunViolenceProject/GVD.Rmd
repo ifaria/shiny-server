@@ -1,0 +1,557 @@
+---
+title: "Gun Violence Archive"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+    theme: "spacelab"
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+library(flexdashboard)
+library(leaflet)
+library(tidyverse)
+library(dplyr)
+library(rebus)
+library(lubridate)
+library(DT)
+library(kableExtra)
+library(shiny)
+library(sf)
+library(rgeos)
+
+#temp <- list.files(pattern = "Data_tbl")
+#Data <- lapply(temp, readRDS)
+
+##### Gather all and compile
+#Data <- do.call(rbind,Data)
+#Data <- Data %>%
+#  dplyr::arrange(desc(Incident))
+#
+#Data <- Data[!duplicated(Data[,c("Date", "City", "Sources")]),]
+#
+#Data_S <- data.frame(matrix(nrow=nrow(Data), ncol = 3))
+#for (i in 1:nrow(Data)){
+#  pattern = Data[["Incident"]][[i]]
+# Data_S[i,"X1"] <- Data[i, "Date"]
+# Data_S[i,"X2"] <- Data[i, "City"]
+# Data_S[i,"X3"] <- str_remove(Data$Sources[i], pattern = pattern)
+#}
+
+#Data <- Data[!duplicated(Data_S),]
+#rm(Data_S)
+
+#saveRDS(Data, "testdata")
+Data <- readRDS("testdata")
+#####
+```
+
+```{r Data Prep - Summaries, message=FALSE, warning=FALSE}
+
+### Incident Characteristics
+Data_Incident_Characteristics <- Data %>% 
+  dplyr::group_by(Incident) %>%
+  select(Incident, Incident_Characteristics)
+
+names(Data_Incident_Characteristics$Incident_Characteristics) <- as.character(Data_Incident_Characteristics$Incident)
+
+Data_Incident_Characteristics <- bind_rows(Data_Incident_Characteristics$Incident_Characteristics, .id = "Incident")
+
+### Guns Involved
+Data_Guns <- Data %>% 
+  dplyr::group_by(Incident) %>%
+  select(Incident, Guns_Involved)
+
+names(Data_Guns$Guns_Involved) <- Data_Guns$Incident
+
+Data_Guns2 <- do.call(rbind, Data_Guns$Guns_Involved)
+
+Data_Guns <- bind_cols(Data_Guns, Data_Guns2) %>% 
+  mutate(Guns_Involved = NULL)
+
+rm(Data_Guns2)
+
+### Participants
+Data_Participants <- Data %>% 
+  dplyr::group_by(Incident) %>%
+  select(Incident, Participants)
+
+names(Data_Participants$Participants) <- Data_Participants$Incident
+
+Data_Participants <- bind_rows(Data_Participants$Participants, .id = "Incident")
+
+### Tables
+
+dg_t <- Data_Guns %>%
+  dplyr::group_by(Type) %>%
+  count() %>%
+  dplyr::arrange(desc(n))
+
+dp_ag <-Data_Participants %>% 
+  dplyr::group_by(`Age Group`) %>%
+  count() %>%
+  dplyr::arrange(desc(n))
+
+dp_s<- Data_Participants %>% 
+  dplyr::group_by(Status) %>%
+  count() %>%
+  dplyr::arrange(desc(n))
+
+dp_t <- Data_Participants %>% 
+  dplyr::group_by(Type) %>%
+  count() %>%
+  dplyr::arrange(desc(n))
+```
+
+```{r Data Prep - Map}
+library(maptools)
+
+### Incidents per State
+
+Data_sum <- Data %>%
+  dplyr::group_by(States) %>%
+  count()
+Data_sum$States <- str_to_lower(Data_sum$States)
+
+### State Maps
+
+states <- maps::map('state', fill=TRUE, col="transparent", plot=FALSE)
+pattern = capture(":" %R% one_or_more(WRD))
+states$names <- str_remove(states$names, pattern = pattern)
+
+### State Populations
+
+state_pop <- readRDS("state_pop")
+state_pop$NAME <-  str_to_lower(state_pop$NAME)
+colnames(state_pop) <- c("States", "Pop_Estimates_2018")
+
+#states$pop <- state_pop
+
+### Current Governor by State
+library(rvest)
+
+wiki_governers <- read_html("https://en.wikipedia.org/wiki/List_of_United_States_governors") 
+
+wiki_governers_T1 <- wiki_governers %>%
+  html_node("table") %>%
+  html_table(fill = T)
+
+wgt_tib <- tibble(State = wiki_governers_T1[-1,1],
+                  Party = wiki_governers_T1[-1,5])
+
+wiki_governers_T2 <- wiki_governers %>%
+  html_nodes("table")
+
+wiki_fd <- wiki_governers_T2[3] %>% html_table(fill=T) %>% as.data.frame()
+
+wiki_fd <-tibble(State = wiki_fd[-1,1],
+                 Party = wiki_fd[-1,5])
+
+wgt_tib <- bind_rows(wgt_tib, wiki_fd)
+
+wgt_tib$State <- str_to_lower(wgt_tib$State)
+
+### State Spacial Polygon
+
+states_sp <- map2SpatialPolygons(states, 
+                                 IDs=states$names,
+                                 proj4string=CRS("+proj=longlat +datum=WGS84"))
+
+### Incident Spacial Points Data Frame
+
+incident_spdf <- SpatialPointsDataFrame(Data[,c(6,7)], Data[,-c(6,7)])
+incident_spdf$States <- str_to_lower(incident_spdf$States)
+
+
+
+### Join Data to State Polygons
+
+Data_sum <- Data_sum %>% right_join(tibble("States" = states$names))
+Data_sum[is.na(Data_sum$n),"n"] <- 0
+Data_sum <- Data_sum[!duplicated(Data_sum),]
+Data_sum <- dplyr::arrange(Data_sum, States)
+Data_sum <- Data_sum %>% left_join(state_pop, by = "States")
+Data_sum[is.na(Data_sum$Pop_Estimates_2018),"Pop_Estimates_2018"] <- 0
+Data_sum <- Data_sum %>% left_join(wgt_tib, by = c("States" = "State"))
+
+pattern = or("Democrat", "Republican")
+Data_sum$Party <- Data_sum$Party %>% str_extract(pattern=pattern)
+Data_sum$Party <- as.factor(Data_sum$Party)
+
+row.names(Data_sum) <- Data_sum$States
+
+states_spdf <- SpatialPolygonsDataFrame(states_sp, 
+                                        Data_sum, 
+                                        match.ID = TRUE)
+
+
+pal <- colorBin("Greens", domain = range(states_spdf$n), bins = seq(min(states_spdf$n), max(states_spdf$n), 1))
+
+pal2 <- colorNumeric(palette = "Greys", domain = states_spdf$Pop_Estimates_2018)
+
+factpal <- colorFactor(c("blue", "red"), states_spdf$Party)
+```
+
+
+Incidents
+=======================================================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+
+
+incident_spdf_sf <- st_as_sf(incident_spdf)
+incident_spdf_sf <- bind_cols(incident_spdf_sf, Data[,c("Longitude", "Latitude")])
+incident_type <- function(x){
+selection <- incident_spdf_sf$Incident_Characteristics %>% 
+  purrr::map("Type") %>% 
+  purrr::map(str_which,(pattern = x)) %>%
+  lengths()
+
+ind <- which(selection>0)
+incident_spdf_sf[ind,]
+}
+age_involved <- function(x){
+  selection <- incident_spdf_sf$Participants %>% 
+    purrr::map("Age Group") %>% 
+    purrr::map(str_which,(pattern = x)) %>%
+    lengths()
+  
+  ind <- which(selection>0)
+  incident_spdf_sf[ind,]
+}
+
+dateRangeInput("date_slider",
+            label = "Select dates",
+            min = min(incident_spdf_sf$Date),
+            max = max(incident_spdf_sf$Date),
+            start = min(incident_spdf_sf$Date), 
+            end = max(incident_spdf_sf$Date)
+            )
+
+checkboxGroupInput("checkbox",
+                   label = "Incident Types",
+                   choices = 
+                     c("Officer Involved" = "Officer",
+                       "Defensive Use" = "Defensive",
+                       "Accident" = "Accidental",
+                       "School" = "School",
+                       "Robbery" = "robbery",
+                       "Domestic" = "Domestic",
+                       "Drive-by" = "Drive-by",
+                       "Home Invasion" = "Home",
+                       "Kidnapping" = "Kidnapping",
+                       "Bar related" = "Bar",
+                       "Mass Shooting" = "Mass",
+                       "Suicide" = "Suicide"
+                   ))
+
+checkboxGroupInput("checkbox2",
+                   label = "Age Group",
+                   choices =
+                     c("Adult" = "Adult",
+                       "Teen" = "Teen",
+                       "Child" = "Child"))
+
+Data_react <- reactive({
+  if(!is.null(input$checkbox) & is.null(input$checkbox2)){
+  x = incident_type(input$checkbox)
+  }else if (is.null(input$checkbox) & !is.null(input$checkbox2)){
+  x = age_involved(input$checkbox2)
+  }else if (!is.null(input$checkbox) & !is.null(input$checkbox2)){
+  x = rbind(incident_type(input$checkbox), age_involved(input$checkbox2))
+  } else{x = incident_spdf_sf} 
+  x %>% filter(Date >= min(input$date_slider) & Date <= max(input$date_slider))
+})
+
+
+```
+
+Column {data-width=900}
+-----------------------------------------------------------------------
+
+### Incidents {data-height=500}
+
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+library(mapview)
+library(htmlTable)
+
+  renderLeaflet({ 
+    leaflet(states_spdf) %>%
+  
+#  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+#    opacity = 1.0, fillOpacity = 0.5,
+#    fillColor = ~pal(n),
+#    highlightOptions = highlightOptions(color = "white", weight = 2,
+#    bringToFront = FALSE),
+#    group = "Incidents Per State") %>%
+
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+    opacity = 1.0, fillOpacity = 0.5,
+    fillColor = ~factpal(Party),
+    highlightOptions = highlightOptions(color = "white", weight = 2,
+    bringToFront = FALSE),
+    group = "Political Affiliation") %>% 
+  
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+    opacity = 1.0, fillOpacity = 0.8,
+    fillColor = ~pal2(Pop_Estimates_2018),
+    highlightOptions = highlightOptions(color = "white", weight = 2,
+    bringToFront = FALSE),
+    group = "Population Density Per State") %>%
+ 
+  addCircleMarkers(data = as.tibble(Data_react()),
+                   radius = 5,
+                   label = ~Incident,
+                   popup = purrr::map(which(Data$Incident %in% Data_react()$Incident), function(row) paste(Data[row, "Sources"], "<br>",
+                    Data[row, "Name"], "<br>",
+                    Data[row, "Street"], "<br>",
+                    Data[row, "City"], "<br>",
+                    Data[row, "Notes"], "<br>", "Participants:",
+                    ifelse(ncol(t(unnest(Data[row, "Participants"])))==0, "No participant info.",
+         htmlTable(t(unnest(Data[row, "Participants"])))), "<br>", "Incident Characteristcs",
+                    htmlTable(unnest(Data[row, "Incident_Characteristics"])), "<br>", "Guns Involved", htmlTable(unnest(Data[row, "Guns_Involved"]))))
+                                      )%>%
+
+  setView(lng = -97, lat = 38, zoom = 4)
+
+})    
+#  %>%
+ 
+#  addLayersControl(
+#    baseGroups = c("Population Density Per State","Incidents Per State"),
+#    overlayGroups = c("Incidents")
+#  )
+
+```
+
+### Total Incidents
+
+```{r message=FALSE, warning=FALSE}
+renderValueBox({
+  valueBox(
+    paste(nrow(Data_react())),
+    icon ="fa-pencil"
+          ) 
+    })
+```
+
+### Summary
+
+```{r Summary Tables, }
+
+
+#ft <- dplyr::arrange(Data_sum, desc(n)) %>%
+#  map_dfc(str_to_title)  %>%
+#  dplyr::arrange(desc(n))
+
+dp_ag %>%
+kable("html") %>%
+  kable_styling(full_width = T) %>%
+  row_spec(0, background = "steelblue", color = "white") %>%
+  column_spec(1, bold = T) %>%
+  column_spec(2, bold = T)
+
+dp_s %>%
+kable("html") %>%
+  kable_styling(full_width = T) %>%
+  row_spec(0, background = "steelblue", color = "white") %>%
+  column_spec(1, bold = T) %>%
+  column_spec(2, bold = T)
+
+dp_t %>%
+kable("html") %>%
+  kable_styling(full_width = T) %>%
+  row_spec(0, background = "steelblue", color = "white") %>%
+  column_spec(1, bold = T) %>%
+  column_spec(2, bold = T)
+
+#ft %>%
+#kable("html") %>%
+#  kable_styling(full_width = T) %>%
+#  row_spec(0, background = "steelblue", color = "white") %>%
+#  column_spec(1, bold = T) %>%
+#  column_spec(2, bold = T)
+
+
+```
+
+
+Column {data-width=100} {.tabset}
+-----------------------------------------------------------------------
+### Data
+
+Map data is gathered from several different sources.
+
+ * Red and Blue colors are scraped from <a href="https://en.wikipedia.org/wiki/List_of_United_States_governors" target="blank">Wikipedia List of United States Governors</a>
+ * Longitudes and latitudes that are not listed are gathered from the the ggmap package (cited below)
+ 
+ * Population densities are gathered from the <a href="https://www.census.gov/data/tables/time-series/demo/popest/2010s-national-total.html" target="blank">US Census Bureau</a>
+ * Map polygons are gathered from the r "maps" package
+ 
+The data presented is collected from the <a href="https://www.gunviolencearchive.org" target="blank">Gun Violence Archive</a> - a non-profit, non-partisan corporation in the United States. The GVA checks all cases for accuracy before they are posted. The purpose is to understand crime at the street, Congressional District, and State legislator level.
+
+D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R
+  Journal, 5(1), 144-161. URL
+  http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf
+
+### Definitions
+
+Cases are verified by initial researchers and a secondary validation process. Data is gathered through automated queries, manual research through over 2,000 media sources, aggregates, police blotters, and plice media outlets daily.
+
+The goal is to provide information on most types of gun violence, with the exception of suicides and armed robberies. These who are collected in aggregate with law enforcemet in quarterly reports.
+
+Basic Definitions:
+
+Term            | Definition
+----------------|---------------------------------------------------------
+Gun Violence    |Gun Violence describes the results of all incidents of death or injury or threat with firearms without pejorative judgment within the definition. Violence is defined without intent or consequence as a consideration. To that end a shooting of a victim by a subject/suspect is considered gun violence as is a defensive use or an officer involved shooting. The act itself, no matter the reason is violent in nature.
+Summary Ledger  | An ongoing counter of incident reports in selected categories beginning January 1, 2015. Sourcing is found linked to each incident in the database. No number exists without a verifiable source.
+Murder/Suicide  | An incident where one person kills one or more individuals and then himself at the same/near location.
+School Shooting | An incident with death or injury that occurs on school property when students, faculty and/or staff are on the premises. Intent during those times are not restricted to specific type of shootings. Incidents that take place on or near school property when no students or faculty/staff are present are not considered "school shootings".
+Mass Shooting   | FOUR or more killed in a single event [incident], at the same general time and location not including the shooter.
+Mass Murder     | FOUR or more shot and/or killed in a single event [incident], at the same general time and location  not including the shooter.
+Spree/Serial  Murder  | The unlawful killing of two or more victims by the same offender(s), in separate events.
+Defensive Use | 	The reported use of force with a firearm to protect and/or defend one's self or family. Only verified incidents are reported.
+Home Invasion | The forcible entry with firearms with the intent to terrorize, steal or harm the occupants of the home. Only verified incidents are reported.
+
+### States
+
+```{r fig.width=8, fig.height=20}
+
+State_summary <- Data_sum %>% mutate(Incidents_per_100k = (n/Pop_Estimates_2018)*100000)
+State_summary$States <- str_to_title(State_summary$States)
+
+State_summary[State_summary$States == "Massachusetts", "n"] <- State_summary[State_summary$States == "Massachusetts", "n"] + State_summary[State_summary$States == "Massachusetts's Vineyard", "n"]
+State_summary[State_summary$States == "Massachusetts's Vineyard", "n"] = NA
+
+State_summary[State_summary$States == "New York", "n"] <- State_summary[State_summary$States == "New York", "n"] + State_summary[State_summary$States == "New York Island", "n"]
+State_summary[State_summary$States == "New York Island", "n"] = NA
+
+State_summary[State_summary$States == "Washington", "n"] <- State_summary[State_summary$States == "Washington", "n"] + State_summary[State_summary$States == "Washington Island", "n"]
+State_summary[State_summary$States == "Washington Island", "n"] = NA
+
+State_summary[State_summary$States == "Washington", "n"] <- State_summary[State_summary$States == "Washington", "n"] + State_summary[State_summary$States == "Washington Juan Island", "n"]
+State_summary[State_summary$States == "Washington Juan Island", "n"] = NA
+
+State_summary <- State_summary[!is.na(State_summary$n), ]
+
+pie_sum <- State_summary %>%
+  dplyr::group_by(Party) %>%
+  summarize(total = sum(n))
+
+states_rategg <- ggplot(State_summary, aes(x = reorder(States, Incidents_per_100k), y = Incidents_per_100k, fill = Party)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip() +
+   scale_fill_manual(values = c("Blue", "Red")) + 
+  geom_label(aes(label = round(Incidents_per_100k, 3)), color = "white", fontface = "bold") +
+  theme(legend.position = c(0.8, 0.2),
+        legend.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 13))+
+  labs(x = NULL,
+       y = NULL, 
+       title = "Rate of Incident Per 100,000 People")
+
+state_totalgg <- ggplot(pie_sum, aes(x = "", y = total, fill = Party)) + 
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar(theta = "y", start = 0) +
+  theme(legend.position = c(0.8, 0.2),
+        axis.line = element_blank(), 
+        plot.title = element_text(hjust=0.5),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank()) +
+  geom_text(stat= 'identity', aes(label=total), color = "white", 
+            fontface = "bold.italic", size = 12, position = position_stack(vjust = 0.5)) +
+    labs(fill= "Parties",
+       x=NULL,
+       y=NULL, 
+       title="Proportion of Incidents Between State Party Affiliations") +
+  scale_fill_manual(values = c("Blue", "Red"))
+
+library("gridExtra")
+
+grid.arrange(states_rategg, state_totalgg, nrow = 2)
+```
+
+### Incidents(list)
+
+```{r}
+
+datatable(Data[,c("Sources", "Num_Participiants", "Injury", "Notes")], escape = F, style = "bootstrap")
+
+```
+
+
+### Characteristics
+
+```{r fig.width=8, fig.asp = 1.5}
+DIC <- ggplot(Data_Incident_Characteristics, aes(x= reorder(Type, table(Type)[Type]))) + 
+  geom_bar(aes(fill = Detail)) +
+  geom_text(stat='count',aes(label=Type), hjust="left", fontface = "bold.italic")+
+  geom_text(stat='count',aes(label=..count..), hjust=1.3, color = "white", fontface = "bold") +
+  coord_flip() +
+  xlab(NULL) +
+  theme(legend.position = "top",
+        legend.background = element_rect(fill="whitesmoke", size = .25, 
+                                         linetype = "solid", color = "grey37"),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        axis.text = element_text(size =14),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank()) +
+      guides(col = guide_legend(ncol = 3))
+(DIC)
+
+```
+
+### Participants
+
+```{r}
+DP <- ggplot(Data_Participants, aes(x= Status)) + 
+  geom_bar(aes(fill = Type)) +
+  geom_text(stat='count',aes(label=..count..), vjust=-.5) + 
+  theme(axis.text.x = 
+          element_text(angle = 45,
+                       hjust = 1))
+
+(DP)
+
+dt_kable <- Data_Participants %>%
+  dplyr::group_by(`Age Group`, Status, Type) %>%
+  count() %>%
+  dplyr::arrange(desc(n))
+
+color.child <- which(dt_kable$`Age Group`=="Child 0-11")
+color.teen <- which(dt_kable$`Age Group`=="Teen 12-17")
+
+dt_kable %>%
+  kable() %>%
+  kable_styling("striped", full_width = T) %>%
+  column_spec(4, bold = T) %>%
+  row_spec(color.child, bold = T, color = "white", background = "red") %>%
+  row_spec(color.teen, bold = T, color = "white", background = "red")
+```
+
+### Guns
+
+```{r}
+ggplot(Data_Guns, aes(x= Type, y = Number_Of_Guns, fill = factor(Number_Of_Guns))) + 
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar(theta = "y", start = 0) +
+  theme(axis.line = element_blank(), 
+        plot.title = element_text(hjust=0.5),
+        axis.text.x = element_blank()) + 
+  labs(fill="# of Guns Involved",
+       x=NULL,
+       y=NULL, 
+       title="# of Guns and Gun Type")
+  
+```
+
+
+Gun Laws
+=======================================================================
