@@ -586,8 +586,11 @@ output$gun_law_heatmap <- renderPlot({
 })
 
 output$hover_states  <- renderText({
-  if(!is.null(input$heatmap_hover)){
-    paste0("State", input$heatmap_hover$x, "Law:", input$heatmap_hover$y)
+  if(is.null(input$heatmap_hover$x)) return("") 
+  else {
+    state_levels <- levels(look2$state)
+    state_names <- state_levels[round(input$heatmap_hover$x)]
+    HTML("You've selected <code>", state_names, "</code>")
     }
 })
 
