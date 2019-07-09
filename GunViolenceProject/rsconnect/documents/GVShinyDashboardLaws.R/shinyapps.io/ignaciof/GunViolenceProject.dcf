@@ -1,0 +1,13 @@
+name: GunViolenceProject
+title: GunViolenceProject
+username:
+account: ignaciof
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 986986
+bundleId: 2176296
+url: https://ignaciof.shinyapps.io/GunViolenceProject/
+when: 1561442368.46065
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|061119 doodle.R
