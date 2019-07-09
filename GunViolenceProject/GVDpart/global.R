@@ -123,10 +123,6 @@ age_involved <- function(age){
               by = "Incident")
 }
 
-ui <- dashboardPage(
-  header = header,
-  sidebar = sidebar,
-  body = body
-)
+
 shinyApp(ui, server)
 
